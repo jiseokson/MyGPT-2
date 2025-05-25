@@ -11,12 +11,12 @@ from torch.distributed import init_process_group, destroy_process_group
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 from model import GPTModel, GPTConfig
-from dataloader import FineWebDataLoader
+from fineweb import FineWebDataLoader
 
 ddp = int(os.environ.get("RANK", -1)) != -1
 
 if ddp:
-  init_process_group(backend='nccl')
+  init_process_group(backend="nccl")
 
   rank = int(os.environ["RANK"])
   local_rank = int(os.environ["LOCAL_RANK"])
@@ -69,7 +69,7 @@ def get_optimizer(model, weight_decay, learning_rate, device_type):
   return optimizer
 
 def get_scheduler(optimizer, max_lr=6e-4, min_lr=6e-4*0.1, max_steps=19073, warmup_steps=715):
-  def get_lr(step):
+  def get_lr_factor(step):
     if step < warmup_steps:
       return (step + 1) / warmup_steps
     if step >= max_steps:
@@ -80,9 +80,9 @@ def get_scheduler(optimizer, max_lr=6e-4, min_lr=6e-4*0.1, max_steps=19073, warm
 
     return min_lr / max_lr + coeff * (1 - min_lr / max_lr)
   
-  return LambdaLR(optimizer, get_lr)
+  return LambdaLR(optimizer, get_lr_factor)
 
-torch.set_float32_matmul_precision('high')
+torch.set_float32_matmul_precision("high")
 
 raw_model = GPTModel(GPTConfig(vocab_size=50304)).to(device)
 torch.compile(raw_model)
@@ -138,7 +138,7 @@ for step in range(max_steps):
     end = time.time()
     duration = end - start
 
-    proccess_tokens = total_batch_size * max_input_tokens
+    proccess_tokens = total_batch_size
     tokens_per_sec = proccess_tokens / duration
 
     print(f"step: {step:3} | "
