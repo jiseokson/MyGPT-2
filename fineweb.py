@@ -14,7 +14,7 @@ n_procs = os.cpu_count()
 chunksize = 128
 
 enc = tiktoken.get_encoding("gpt2")
-eot = enc._special_tokens['<|endoftext|>']
+eot = enc._special_tokens["<|endoftext|>"]
 
 def load_shard(shard_file):
   npt = np.load(shard_file).astype(np.int32)
@@ -84,12 +84,11 @@ def write_file(shard_idx, tokens):
   np.save(filepath, tokens)
 
 def download_fineweb():
-  streaming_dataset = load_dataset("HuggingFaceFW/fineweb-edu", name="sample-10BT", split="train", streaming=True)
-
-  os.makedirs(data_dir, exist_ok=True)
-
   print(f"[INFO] Number of CPU processes     : {n_procs}")
   print(f"[INFO] imap chunksize              : {chunksize}")
+  
+  streaming_dataset = load_dataset("HuggingFaceFW/fineweb-edu", name="sample-10BT", split="train", streaming=True)
+  os.makedirs(data_dir, exist_ok=True)
 
   with mp.Pool(n_procs) as pool:
     shard_idx = 0
@@ -107,22 +106,31 @@ def download_fineweb():
         progress_bar.update(len(tokens))
 
       else:
-        remainder = shard_token_size - token_count
-        shard_tokens[token_count : token_count + remainder] = tokens[:remainder]
+        if shard_idx == 0:
+          progress_bar.refresh()
+          progress_bar.close()
 
-        progress_bar.update(remainder)
-        progress_bar.refresh()
-        progress_bar.close()
+          write_file(shard_idx, shard_tokens[:token_count])
 
-        write_file(shard_idx, shard_tokens)
+          shard_tokens[:len(tokens)] = tokens
+          token_count = len(tokens)
+
+        else:
+          remainder = shard_token_size - token_count
+          shard_tokens[token_count : token_count + remainder] = tokens[:remainder]
+
+          progress_bar.update(remainder)
+          progress_bar.refresh()
+          progress_bar.close()
+
+          write_file(shard_idx, shard_tokens)
+
+          shard_tokens[:len(tokens) - remainder] = tokens[remainder:]
+          token_count = len(tokens) - remainder
 
         shard_idx += 1
-
-        shard_tokens[:len(tokens) - remainder] = tokens[remainder:]
-        token_count = len(tokens) - remainder
-
         progress_bar = tqdm(total=shard_token_size, unit="token", desc=f"Shard {shard_idx}")
-        progress_bar.update(len(tokens) - remainder)
+        progress_bar.update(token_count)
 
     if token_count > 0:
       write_file(shard_idx, shard_tokens[:token_count])
