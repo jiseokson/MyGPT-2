@@ -48,8 +48,14 @@ grad_accm_steps = total_batch_size // (micro_batch_size * max_input_tokens * wor
 weight_decay = 0.1
 max_lr = 6e-4
 min_lr = max_lr * 0.1
-max_steps = 50 # for test, default 19073
-warmup_steps = 10 # for test, default 715
+max_steps = 19073 # for test, default 19073
+warmup_steps = 715 # for test, default 715
+
+val_interval = 100 #250
+checkpoint_interval = 200 #500
+
+checkpoint_dir = "checkponit"
+os.makedirs(checkpoint_dir, exist_ok=True)
 
 def get_optimizer(model, weight_decay, learning_rate, device_type):
   param_dict = {pn: p for pn, p in model.named_parameters() if p.requires_grad}
@@ -134,7 +140,50 @@ for step in range(max_steps):
   if master_process:
     start = time.time()
 
-  last = (step == max_steps - 1)
+  last_step = (step == max_steps - 1)
+
+  if step % val_interval == 0 or last_step:
+    model.eval()
+    val_loader.reset()
+
+    val_loss_accm = 0
+    val_steps = 20
+
+    with torch.inference_mode():
+      for _ in range(val_steps):
+        x, y = val_loader.next_batch()
+        x, y = x.to(device), y.to(device)
+
+        with torch.autocast(device_type=device_type, dtype=torch.bfloat16):
+          _, loss = model(x, y)
+
+        loss /= val_steps
+        val_loss_accm += loss.detach()
+
+    if ddp:
+      dist.all_reduce(val_loss_accm, op=dist.ReduceOp.AVG)
+
+    if master_process:
+      wandb.log({
+        "step": step,
+        "val/loss": val_loss_accm.item(),
+      })
+
+      print(f"step: {step:3} | "
+            f"val loss: {val_loss_accm.item():8.3f}")
+
+  if step > 0 and (step % checkpoint_interval == 0 or last_step):
+    if master_process:
+      checkpoint = {
+        "step": step,
+        "model_state_dict": raw_model.state_dict(),
+      }
+      checkpoint_path = f"step{step:05d}.pt"
+      
+      torch.save(checkpoint, os.path.join(checkpoint_dir, checkpoint_path))
+      print(f"{checkpoint_path} saved")
+
+    dist.barrier()
 
   model.train()
   optimizer.zero_grad()
@@ -177,7 +226,7 @@ for step in range(max_steps):
 
     wandb.log({
       "step": step,
-      "train/loss": loss_accm,
+      "train/loss": loss_accm.item(),
       "train/lr": lr,
       "train/norm": norm,
     })
