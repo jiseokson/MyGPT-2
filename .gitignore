@@ -1,4 +1,4 @@
-/logs
-/data
-/venv
-/__pycache__
+logs/
+data/
+venv/
+__pycache__/
