@@ -48,8 +48,8 @@ grad_accm_steps = total_batch_size // (micro_batch_size * max_input_tokens * wor
 weight_decay = 0.1
 max_lr = 6e-4
 min_lr = max_lr * 0.1
-max_steps = 15 # for test, default 19073
-warmup_steps = 5 # for test, default 715
+max_steps = 50 # for test, default 19073
+warmup_steps = 10 # for test, default 715
 
 def get_optimizer(model, weight_decay, learning_rate, device_type):
   param_dict = {pn: p for pn, p in model.named_parameters() if p.requires_grad}
@@ -192,4 +192,5 @@ for step in range(max_steps):
 if ddp:
   destroy_process_group()
 
-wandb.finish()
+if master_process:
+  wandb.finish()
