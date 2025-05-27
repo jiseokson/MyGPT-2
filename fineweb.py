@@ -32,18 +32,21 @@ class FineWebDataLoader:
     self.split = split
     self.root_dir = root_dir
 
-    self.shard_idx = 0
     self.shard_files = sorted(os.path.join(root_dir, file) for file in os.listdir(root_dir) if split in file)
 
+    self.reset()
+  
+  def reset(self):
+    self.shard_idx = 0
     self.all_tokens = load_shard(self.shard_files[self.shard_idx])
-    self.position = self.batch_token_size * proc_rank
+    self.position = self.batch_token_size * self.proc_rank
 
   def next_batch(self):
     start_pos = self.position
     start_all_tokens_len = len(self.all_tokens)
 
     if self.position + self.batch_token_size + 1 > len(self.all_tokens):
-      buf = torch.empty((self.batch_token_size + 1,), dtype=torch.int32)
+      buf = torch.empty((self.batch_token_size + 1,), dtype=torch.long)
 
       remainder = len(self.all_tokens) - self.position
       buf[:remainder] = self.all_tokens[-remainder:]
@@ -66,10 +69,14 @@ class FineWebDataLoader:
 
     assert (end_pos - start_pos + start_all_tokens_len) % start_all_tokens_len == self.batch_token_size * self.num_procs, \
       f"Actual jump: {(start_pos - end_pos + start_all_tokens_len) % start_all_tokens_len}, Expected: {self.batch_token_size * self.num_procs}"
+    
+    assert x.dtype == torch.long and y.dtype == torch.long
 
     return x, y
 
   def _load_next_shard(self):
+    if self.shard_idx == (self.shard_idx + 1) % len(self.shard_files):
+      return
     self.shard_idx = (self.shard_idx + 1) % len(self.shard_files)
     self.all_tokens = load_shard(self.shard_files[self.shard_idx])
 
