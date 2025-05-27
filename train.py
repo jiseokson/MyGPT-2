@@ -10,6 +10,8 @@ import torch.distributed as dist
 from torch.distributed import init_process_group, destroy_process_group
 from torch.nn.parallel import DistributedDataParallel as DDP
 
+import wandb
+
 from model import GPTModel, GPTConfig
 from fineweb import FineWebDataLoader
 
@@ -46,8 +48,8 @@ grad_accm_steps = total_batch_size // (micro_batch_size * max_input_tokens * wor
 weight_decay = 0.1
 max_lr = 6e-4
 min_lr = max_lr * 0.1
-max_steps = 15 # for test
-warmup_steps = 5 # for test
+max_steps = 15 # for test, default 19073
+warmup_steps = 5 # for test, default 715
 
 def get_optimizer(model, weight_decay, learning_rate, device_type):
   param_dict = {pn: p for pn, p in model.named_parameters() if p.requires_grad}
@@ -67,7 +69,7 @@ def get_optimizer(model, weight_decay, learning_rate, device_type):
 
   return optimizer
 
-def get_scheduler(optimizer, max_lr=6e-4, min_lr=6e-4*0.1, max_steps=19073, warmup_steps=715):
+def get_scheduler(optimizer, max_lr, min_lr, max_steps, warmup_steps):
   def get_lr_factor(step):
     if step < warmup_steps:
       return (step + 1) / warmup_steps
@@ -83,7 +85,8 @@ def get_scheduler(optimizer, max_lr=6e-4, min_lr=6e-4*0.1, max_steps=19073, warm
 
 torch.set_float32_matmul_precision("high")
 
-raw_model = GPTModel(GPTConfig(vocab_size=50304)).to(device)
+model_config = GPTConfig(vocab_size=50304)
+raw_model = GPTModel(model_config).to(device)
 torch.compile(raw_model)
 
 model = DDP(raw_model, device_ids=[local_rank]) if ddp else raw_model
@@ -94,6 +97,38 @@ optimizer_scheduler.step()
 
 train_loader = FineWebDataLoader(micro_batch_size, max_input_tokens, local_rank, world_size, "train")
 val_loader = FineWebDataLoader(micro_batch_size, max_input_tokens, local_rank, world_size, "val")
+
+if master_process:
+  wandb.init(
+    project="GPT2",
+    config={
+      "total_batch_size": total_batch_size,
+      "micro_batch_size": micro_batch_size,
+      "max_input_tokens": max_input_tokens,
+      "grad_accm_steps": grad_accm_steps,
+
+      "weight_decay": weight_decay,
+      "max_lr": max_lr,
+      "min_lr": min_lr,
+      "max_steps": max_steps,
+      "warmup_steps": warmup_steps,
+
+      "vocab_size": model_config.vocab_size,
+      "n_ctx": model_config.n_ctx,
+
+      "n_layer": model_config.n_layer,
+      "n_embd": model_config.n_embd,
+      "n_head": model_config.n_head,
+
+      "embd_pdrop": model_config.embd_pdrop,
+      "attn_pdrop": model_config.attn_pdrop,
+      "resid_pdrop": model_config.resid_pdrop,
+
+      "layer_norm_epsilon": model_config.layer_norm_epsilon,
+
+      "initializer_range": model_config.initializer_range,
+    }
+  )
 
 for step in range(max_steps):
   if master_process:
@@ -140,6 +175,13 @@ for step in range(max_steps):
     proccess_tokens = total_batch_size
     tokens_per_sec = proccess_tokens / duration
 
+    wandb.log({
+      "step": step,
+      "train/loss": loss_accm,
+      "train/lr": lr,
+      "train/norm": norm,
+    })
+
     print(f"step: {step:3} | "
           f"loss: {loss_accm.item():8.3f} | "
           f"lr: {lr:.3e} | "
@@ -149,3 +191,5 @@ for step in range(max_steps):
 
 if ddp:
   destroy_process_group()
+
+wandb.finish()
