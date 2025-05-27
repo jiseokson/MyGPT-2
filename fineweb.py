@@ -21,16 +21,13 @@ def load_shard(shard_file):
   return torch.tensor(npt, dtype=torch.long)
 
 class FineWebDataLoader:
-  def __init__(self, batch_size, max_input_tokens, proc_rank, num_procs, split="train", root_dir="data"):
+  def __init__(self, batch_size, max_input_tokens, proc_rank, num_procs, split="train", root_dir=data_dir):
     self.batch_size = batch_size
     self.max_input_tokens = max_input_tokens
     self.batch_token_size = batch_size * max_input_tokens
 
-    self.proc_rank = proc_rank
+    self.proc_rank = proc_rank 
     self.num_procs = num_procs
-
-    self.local_shard_size = shard_token_size // num_procs
-    self.rank_offset = proc_rank * self.local_shard_size
 
     self.split = split
     self.root_dir = root_dir
@@ -42,10 +39,13 @@ class FineWebDataLoader:
     self.position = self.batch_token_size * proc_rank
 
   def next_batch(self):
-    if self.position + self.batch_token_size + 1 > shard_token_size:
+    start_pos = self.position
+    start_all_tokens_len = len(self.all_tokens)
+
+    if self.position + self.batch_token_size + 1 > len(self.all_tokens):
       buf = torch.empty((self.batch_token_size + 1,), dtype=torch.int32)
 
-      remainder = shard_token_size - self.position
+      remainder = len(self.all_tokens) - self.position
       buf[:remainder] = self.all_tokens[-remainder:]
 
       self._load_next_shard()
@@ -55,13 +55,17 @@ class FineWebDataLoader:
     else:
       buf = self.all_tokens[self.position : self.position + self.batch_token_size + 1]
 
-      if self.position + self.batch_token_size * self.num_procs >= shard_token_size:
+      if self.position + self.batch_token_size * self.num_procs >= len(self.all_tokens):
         self._load_next_shard()
 
-    self.position = (self.position + self.batch_token_size * self.num_procs) % shard_token_size
+    self.position = (self.position + self.batch_token_size * self.num_procs) % start_all_tokens_len
+    end_pos = self.position
 
     x = buf[:-1].view(self.batch_size, self.max_input_tokens)
     y = buf[1:].view(self.batch_size, self.max_input_tokens)
+
+    assert (end_pos - start_pos + start_all_tokens_len) % start_all_tokens_len == self.batch_token_size * self.num_procs, \
+      f"Actual jump: {(start_pos - end_pos + start_all_tokens_len) % start_all_tokens_len}, Expected: {self.batch_token_size * self.num_procs}"
 
     return x, y
 
