@@ -22,27 +22,34 @@ This project was tested on the following environment:
 Install dependencies:
 
 ```bash
-pip install -r transformers datasets tiktoken wandb
+pip install transformers datasets tiktoken wandb
 ```
 
 ## Training
 
 ### 1. Dataset Download & Preprocessing
 
-We use the FineWeb dataset in NumPy shard format. To download and preprocess the dataset:
+We use the FineWeb dataset in NumPy shard format.
+
+To download and preprocess the dataset:
 
 ```bash
 python fineweb.py
 ```
 
-This script performs tokenization and serialization into compact .npy format
+This script performs tokenization and serialization into compact `.npy` format
+> ⚠️ Make sure you have at least 20GB of free disk space available for storing the preprocessed dataset, as the script will generate tokenized `.npy` files under the `data/` directory.
 
 ### 2. Launch Training
+
+We trained the model on RunPod using a single node with 8×A100 80GB GPUs. Distributed training was conducted via PyTorch's `torchrun` launcher with the NCCL backend.
+
+To launch training:
+
 ```bash
 torchrun --nproc_per_node=8 train.py
 ```
 
 ## Model Architecture
-
 
 ## Results
