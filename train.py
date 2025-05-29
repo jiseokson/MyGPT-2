@@ -48,11 +48,11 @@ grad_accm_steps = total_batch_size // (micro_batch_size * max_input_tokens * wor
 weight_decay = 0.1
 max_lr = 6e-4
 min_lr = max_lr * 0.1
-max_steps = 19073 # for test, default 19073
-warmup_steps = 715 # for test, default 715
+max_steps =  19073
+warmup_steps = 715
 
-val_interval = 100 #250
-checkpoint_interval = 200 #500
+val_interval = 250
+checkpoint_interval = 1000
 
 checkpoint_dir = "checkponit"
 os.makedirs(checkpoint_dir, exist_ok=True)
@@ -91,7 +91,7 @@ def get_scheduler(optimizer, max_lr, min_lr, max_steps, warmup_steps):
 
 torch.set_float32_matmul_precision("high")
 
-model_config = GPTConfig(vocab_size=50304)
+model_config = GPTConfig(vocab_size=50304) # delete
 raw_model = GPTModel(model_config).to(device)
 torch.compile(raw_model)
 
@@ -137,17 +137,14 @@ if master_process:
   )
 
 for step in range(max_steps):
-  if master_process:
-    start = time.time()
-
   last_step = (step == max_steps - 1)
 
-  if step % val_interval == 0 or last_step:
+  if step > 0 and (step % val_interval == 0 or last_step):
     model.eval()
     val_loader.reset()
 
     val_loss_accm = 0
-    val_steps = 20
+    val_steps = 5
 
     with torch.inference_mode():
       for _ in range(val_steps):
@@ -172,18 +169,8 @@ for step in range(max_steps):
       print(f"step: {step:3} | "
             f"val loss: {val_loss_accm.item():8.3f}")
 
-  if step > 0 and (step % checkpoint_interval == 0 or last_step):
-    if master_process:
-      checkpoint = {
-        "step": step,
-        "model_state_dict": raw_model.state_dict(),
-      }
-      checkpoint_path = f"step{step:05d}.pt"
-      
-      torch.save(checkpoint, os.path.join(checkpoint_dir, checkpoint_path))
-      print(f"{checkpoint_path} saved")
-
-    dist.barrier()
+  if master_process:
+    start = time.time()
 
   model.train()
   optimizer.zero_grad()
@@ -237,6 +224,19 @@ for step in range(max_steps):
           f"norm: {norm:.3f} | "
           f"duration: {duration*1000:.3f} ms | "
           f"tps: {tokens_per_sec:.3f} tok/s")
+    
+  if step > 0 and (step % checkpoint_interval == 0 or last_step):
+    if master_process:
+      checkpoint = {
+        "step": step,
+        "model_state_dict": raw_model.state_dict(),
+      }
+      checkpoint_path = f"step{step:05d}.pt"
+      
+      torch.save(checkpoint, os.path.join(checkpoint_dir, checkpoint_path))
+      print(f"{checkpoint_path} saved")
+
+    dist.barrier()
 
 if ddp:
   destroy_process_group()
