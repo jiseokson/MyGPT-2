@@ -8,7 +8,7 @@ Key features:
 - Pure PyTorch implementation of a GPT-2 style transformer
 - Efficient token-level streaming DataLoader for large-scale training
 - Distributed training support via PyTorch's native DDP
-- Compatible with multi-node/multi-GPU infrastructure
+- Compatible with multi-GPU infrastructure
 
 ## Installation & Environment
 
