@@ -50,6 +50,12 @@ To launch training:
 torchrun --nproc_per_node=8 train.py
 ```
 
-## Model Architecture
-
 ## Results
+
+Loss decreased rapidly during the first 3,000 steps then continued to decline steadily.
+The gap between training and validation loss remained minimal indicating no signs of overfitting.
+
+<p align="center">
+ <img src="https://github.com/user-attachments/assets/a64fc811-73e0-4f73-833f-944902b5c361" width="45%"/>
+ <img src="https://github.com/user-attachments/assets/ac13fb4a-c265-4d24-9f4d-04039be50e9d" width="45%"/>
+</p>
