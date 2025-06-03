@@ -60,6 +60,44 @@ The gap between training and validation loss remained minimal indicating no sign
  <img src="https://github.com/user-attachments/assets/ac13fb4a-c265-4d24-9f4d-04039be50e9d" width="45%"/>
 </p>
 
+## Experiment 1
+
+**LAMBADA**
+- Language Modeling Broadened to Account for Discourse Aspects
+- Extracted from BookCorpus; a collection of freely available English novels
+- Consists of sentences that are difficult to complete without full context
+
+**Evaluation Setup**
+- Prompt : Full sentence excluding the final word
+- Target : The final word
+- Metric: accuracy — percentage of exact matches between prediction and target
+
+|| GPT-2 Small | Our Model |
+|-|-|-|
+| Accuracy (%) | *45.99 | 16.03</br>(826/5153) |
+
+> *Advanced performance excluding stop words; estimated increase of about 10%*
+
+## Experiment 2
+
+**CBT**
+- Children's Book Test
+- A single word (Common Noun, Named Entity, Verb, Preposition) is removed from a sentence
+- 10 candidate words are provided, only one is correct
+
+**Evaluation Setup**
+- Prompt: Sentence with a missing word (CN, NE) (ex. "The cat chased the XXXX")
+- Answer: One correct target among 10 candidates
+- Metric: Common Noun(CN), Named Entity(NE) Accuracy
+  1. For each candidate, compute the full-sequence loss after inserting it into the blank CN accuracy (%)
+  2. The word with the lowest loss is selected as the model's prediction
+ 
+|| GPT-2 Small | Our Model |
+|-|-|-|
+| CN Accuracy (%) | 87.65 | 72.51 (1807/2492) |
+| NE Accuracy (%) | 83.40 | 51.14 (1275/2493) |
+| Total Accuracy (%) | - | 61.83 (3082/4985) |
+
 ## Additional Resources
 
 [Building GPT-2.pdf](https://github.com/user-attachments/files/20561738/Building.GPT-2.pdf)
