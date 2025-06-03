@@ -109,4 +109,4 @@ The gap between training and validation loss remained minimal indicating no sign
 
 ## Additional Resources
 
-[Building GPT-2.pdf](https://github.com/user-attachments/files/20561738/Building.GPT-2.pdf)
+[Building GPT-2.pdf](https://github.com/user-attachments/files/20581740/Building.GPT-2.pdf)
