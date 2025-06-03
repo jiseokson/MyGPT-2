@@ -100,12 +100,11 @@ The gap between training and validation loss remained minimal indicating no sign
 
 ## Experiment 3 - Verifying Our GPT-2 Architecture Reproduction
 
-| | LAMBADA accuracy (%) | CBT NE-accuracy (%) |
-|-|-|-|
-| | Paper | Our Model | Paper | Our Model |
+| Model | LAMBADA (Paper) | LAMBADA (Ours) | CBT NE (Paper) | CBT NE (Ours) |
+|-|-|-|-|-|
 | GPT2-small | - | 26.06 | 83.4 | 59.33 |
 | GPT2-medium | - | 37.76 | 87.1 | 67.11 |
-| GPT2-large | - | 40.58 | 88 | 68.95 |
+| GPT2-large | - | 40.58 | 88.0 | 68.95 |
 | GPT2-XL | 52.66 | 44.69 | 89.5 | 72.32 |
 
 ## Additional Resources
