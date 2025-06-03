@@ -60,7 +60,7 @@ The gap between training and validation loss remained minimal indicating no sign
  <img src="https://github.com/user-attachments/assets/ac13fb4a-c265-4d24-9f4d-04039be50e9d" width="45%"/>
 </p>
 
-## Experiment 1
+## Experiment 1 - How Well Does Our Model Understand Context?
 
 **LAMBADA**
 - Language Modeling Broadened to Account for Discourse Aspects
@@ -74,11 +74,11 @@ The gap between training and validation loss remained minimal indicating no sign
 
 || GPT-2 Small | Our Model |
 |-|-|-|
-| Accuracy (%) | *45.99 | 16.03</br>(826/5153) |
+| Accuracy (%) | 45.99 | 16.03</br>(826/5153) |
 
 > *Advanced performance excluding stop words; estimated increase of about 10%*
 
-## Experiment 2
+## Experiment 2 - How Well Does Our Model Predict the Most Contextual Word?
 
 **CBT**
 - Children's Book Test
@@ -97,6 +97,16 @@ The gap between training and validation loss remained minimal indicating no sign
 | CN Accuracy (%) | 87.65 | 72.51 (1807/2492) |
 | NE Accuracy (%) | 83.40 | 51.14 (1275/2493) |
 | Total Accuracy (%) | - | 61.83 (3082/4985) |
+
+## Experiment 3 - Verifying Our GPT-2 Architecture Reproduction
+
+| | LAMBADA accuracy (%) | CBT NE-accuracy (%) |
+|-|-|-|
+| | Paper | Our Model | Paper | Our Model |
+| GPT2-small | - | 26.06 | 83.4 | 59.33 |
+| GPT2-medium | - | 37.76 | 87.1 | 67.11 |
+| GPT2-large | - | 40.58 | 88 | 68.95 |
+| GPT2-XL | 52.66 | 44.69 | 89.5 | 72.32 |
 
 ## Additional Resources
 
