@@ -60,7 +60,7 @@ The gap between training and validation loss remained minimal indicating no sign
  <img src="https://github.com/user-attachments/assets/ac13fb4a-c265-4d24-9f4d-04039be50e9d" width="45%"/>
 </p>
 
-## Experiment 1 - How Well Does Our Model Understand Context?
+### Experiment 1 - How Well Does Our Model Understand Context?
 
 **LAMBADA**
 - Language Modeling Broadened to Account for Discourse Aspects
@@ -78,7 +78,7 @@ The gap between training and validation loss remained minimal indicating no sign
 
 > *Advanced performance excluding stop words; estimated increase of about 10%*
 
-## Experiment 2 - How Well Does Our Model Predict the Most Contextual Word?
+### Experiment 2 - How Well Does Our Model Predict the Most Contextual Word?
 
 **CBT**
 - Children's Book Test
@@ -98,7 +98,7 @@ The gap between training and validation loss remained minimal indicating no sign
 | NE Accuracy (%) | 83.40 | 51.14 (1275/2493) |
 | Total Accuracy (%) | - | 61.83 (3082/4985) |
 
-## Experiment 3 - Verifying Our GPT-2 Architecture Reproduction
+### Experiment 3 - Verifying Our GPT-2 Architecture Reproduction
 
 | Model | LAMBADA (Paper) | LAMBADA (Ours) | CBT NE (Paper) | CBT NE (Ours) |
 |-|-|-|-|-|
